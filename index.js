@@ -50,6 +50,26 @@ async function main() {
   try {
     for (let index = 0; index < configs.length; index++) {
       const config = configs[index];
+      // check config local port is number and remote port is number
+      if (
+        !Number.isInteger(config.localPort) ||
+        !Number.isInteger(config.remotePort)
+      ) {
+        throw new Error("localPort and remotePort must be integer");
+      }
+      // local and remote port must not be 60006 + length of configs
+      if (
+        config.localPort >= 60006 &&
+        config.localPort <= 60006 + configs.length - 1
+      ) {
+        throw new Error("localPort must not be 60006 + length of configs");
+      }
+      if (
+        config.remotePort >= 60006 &&
+        config.remotePort <= 60006 + configs.length - 1
+      ) {
+        throw new Error("localPort must not be 60006 + length of configs");
+      }
       const socksPort = 60006 + index;
       const commmand = [
         "-f",
