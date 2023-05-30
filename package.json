@@ -1,0 +1,23 @@
+{
+  "name": "ssh-tunnel",
+  "version": "1.0.0",
+  "description": "",
+  "exports": "index.js",
+  "engines": {
+    "node": ">=14.16"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/fs-extra": "^11.0.1",
+    "@types/node": "^20.2.5"
+  },
+  "dependencies": {
+    "fetch-socks": "^1.2.0",
+    "fs-extra": "^11.1.1"
+  }
+}
