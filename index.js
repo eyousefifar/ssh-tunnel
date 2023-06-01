@@ -37,7 +37,7 @@ async function checkConnection(sshProcess, command, socksPort) {
         await setTimeout(1 * 1000);
       } else {
         console.error("connection error: ", error);
-        sshProcess.kill();
+        sshProc.kill();
         const { sshProcess: newSshProcess } = startSsh(command);
         sshProc = newSshProcess;
         firstError = true;
