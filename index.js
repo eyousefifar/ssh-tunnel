@@ -73,15 +73,27 @@ async function main() {
         throw new Error("localPort must not be 60006 + length of configs");
       }
       const socksPort = 60006 + index;
+      // const command = [
+      //   "-f",
+      //   "-N",
+      //   "-D",
+      //   `${socksPort}`,
+      //   "-L",
+      //   `*:${config.localPort}:localhost:${config.remotePort}`,
+      //   `${config.user}@${config.ip}`,
+      // ];
       const command = [
         "-f",
+        "-o",
+        "ServerAliveInterval 40",
         "-N",
         "-D",
-        `${socksPort}`,
-        "-L",
-        `*:${config.localPort}:localhost:${config.remotePort}`,
+        `0.0.0.0:${socksPort}`,
+        "-p",
+        "443",
         `${config.user}@${config.ip}`,
       ];
+
       const { sshProcess } = startSsh(command, config.password);
       await checkConnection(sshProcess, command, socksPort);
     }
