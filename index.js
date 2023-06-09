@@ -17,7 +17,7 @@ function startSsh(command) {
 
 async function checkConnection(sshProcess, command, socksPort) {
   let sshProc = sshProcess;
-  await setTimeout(5 * 1000);
+  await setTimeout(2 * 1000);
   let firstError = true;
   while (true) {
     try {
@@ -37,11 +37,13 @@ async function checkConnection(sshProcess, command, socksPort) {
         await setTimeout(1 * 1000);
       } else {
         console.error("connection error: ", error);
-        sshProc.kill();
+        if (!sshProc.killed) {
+          sshProc.kill();
+        }
         const { sshProcess: newSshProcess } = startSsh(command);
         sshProc = newSshProcess;
         firstError = true;
-        await setTimeout(3 * 1000);
+        await setTimeout(2 * 1000);
       }
     }
     await setTimeout(1 * 1000);
@@ -73,29 +75,19 @@ async function main() {
         throw new Error("localPort must not be 60006 + length of configs");
       }
       const socksPort = 60006 + index;
-      // const command = [
-      //   "-f",
-      //   "-N",
-      //   "-D",
-      //   `${socksPort}`,
-      //   "-L",
-      //   `*:${config.localPort}:localhost:${config.remotePort}`,
-      //   `${config.user}@${config.ip}`,
-      // ];
       const command = [
         "-f",
-        "-o",
-        "ServerAliveInterval 40",
         "-N",
         "-D",
-        `0.0.0.0:${socksPort}`,
-        "-p",
-        "443",
+        `${socksPort}`,
+        "-L",
+        `*:${config.localPort}:localhost:${config.remotePort}`,
         `${config.user}@${config.ip}`,
       ];
-
       const { sshProcess } = startSsh(command, config.password);
-      await checkConnection(sshProcess, command, socksPort);
+      checkConnection(sshProcess, command, socksPort).catch((err) => {
+        console.error(err);
+      });
     }
   } catch (error) {
     console.error(error);
