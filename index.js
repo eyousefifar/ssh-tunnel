@@ -1,56 +1,54 @@
 const { readJSONSync } = require("fs-extra");
+const EventEmitter = require("events");
 const { join } = require("path");
 const { setTimeout } = require("timers/promises");
-const { spawn } = require("child_process");
+const { spawnSync } = require("child_process");
 const { socksDispatcher } = require("fetch-socks");
 
 const configs = readJSONSync(join(process.cwd(), "config.json"));
-
+const events = new EventEmitter();
 if (!Array.isArray(configs)) {
   throw new Error("config.json must be an array");
 }
 
-function startSsh(command) {
-  const sshProcess = spawn("ssh", command);
-  return { sshProcess };
-}
 
-async function checkConnection(sshProcess, command, socksPort) {
-  let sshProc = sshProcess;
-  await setTimeout(2 * 1000);
+async function checkConnection(socksPort) {
+  await setTimeout(1 * 1000);
   let firstError = true;
-  while (true) {
+  let checkConnectionStatus = true;
+  events.on("restart", () => {
+    checkConnectionStatus = false;
+  });
+  while (checkConnectionStatus) {
     try {
       const dispatcher = socksDispatcher({
         type: 5,
         host: "127.0.0.1",
         port: socksPort,
       });
-      const response = await fetch("https://clients3.google.com/generate_204", {
+      await fetch("https://clients3.google.com/generate_204", {
         dispatcher,
       });
-      console.log(response.status);
     } catch (error) {
       if (firstError) {
-        console.log("connection error: ", error);
+        console.error("first connection error, socksPort: ", socksPort);
         firstError = false;
-        await setTimeout(1 * 1000);
+        await setTimeout(500);
       } else {
-        console.error("connection error: ", error);
-        if (!sshProc.killed) {
-          sshProc.kill();
-        }
-        const { sshProcess: newSshProcess } = startSsh(command);
-        sshProc = newSshProcess;
-        firstError = true;
-        await setTimeout(2 * 1000);
+        console.error("connection error, socksPort:", socksPort);
+        spawnSync("killall", ["ssh"]);
+        console.log("killed all ssh");
+        events.emit("restart");
+        startSsh();
+        break;
       }
     }
     await setTimeout(1 * 1000);
   }
+  console.log("end", socksPort);
 }
 
-async function main() {
+function startSsh() {
   try {
     for (let index = 0; index < configs.length; index++) {
       const config = configs[index];
@@ -84,8 +82,8 @@ async function main() {
         `*:${config.localPort}:localhost:${config.remotePort}`,
         `${config.user}@${config.ip}`,
       ];
-      const { sshProcess } = startSsh(command, config.password);
-      checkConnection(sshProcess, command, socksPort).catch((err) => {
+      spawnSync("ssh", command);
+      checkConnection(socksPort).catch((err) => {
         console.error(err);
       });
     }
@@ -94,4 +92,6 @@ async function main() {
   }
 }
 
-main();
+
+
+startSsh();
